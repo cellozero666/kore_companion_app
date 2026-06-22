@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>NSAccessibilityUsageDescription</key>
+    <string>K.O.R.E. precisa de acesso à acessibilidade para ler notificações do sistema e exibi-las no seu dispositivo.</string>
+  </dict>
+</plist>

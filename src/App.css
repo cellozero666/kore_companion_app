@@ -1,0 +1,252 @@
+* {
+     margin: 0;
+     padding: 0;
+     box-sizing: border-box;
+}
+ body {
+     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+ .app {
+     display: flex;
+     height: 100vh;
+}
+ .content {
+     flex: 1;
+     padding: 40px;
+}
+ .content h1 {
+     margin-bottom: 30px;
+}
+ .card {
+     background: white;
+     border-radius: 14px;
+     padding: 20px;
+     max-width: 500px;
+     box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+ .card h2 {
+     margin-bottom: 15px;
+}
+ .card p {
+     margin-bottom: 8px;
+}
+/* -------------------------------- */
+/* SPOTIFY */
+/* -------------------------------- */
+.sidebar {
+     width: 200px;
+     background: #ffffff;
+     border-right: 1px solid #e5e5e5;
+     padding: 30px 20px;
+}
+ .sidebar nav {
+     display: flex;
+     flex-direction: column;
+     gap: 6px;
+}
+ .sidebar button {
+     display: flex;
+     align-items: center;
+     gap: 12px;
+     border: none;
+     background: transparent;
+     text-align: left;
+     padding: 12px 14px;
+     border-radius: 10px;
+     cursor: pointer;
+     font-size: 15px;
+     font-weight: 500;
+}
+ .sidebar button:hover {
+     background: #f5f5f5;
+}
+ .sidebar button.active {
+     background: #f5f5f5;
+}
+ .sidebar-icon {
+     font-size: 18px;
+     flex-shrink: 0;
+}
+ .sidebar-icon.dashboard {
+     color: #4f46e5;
+}
+ .sidebar-icon.spotify {
+     color: #1db954;
+}
+ .sidebar-icon.google {
+     color: #4285f4;
+}
+ .sidebar-icon.weather {
+     color: #fbbc05;
+}
+ .sidebar-icon.settings {
+     color: #757575;
+}
+
+/* -------------------------------- */
+/* SPOTIFY */
+/* -------------------------------- */
+ .spotify-header {
+     position: relative;
+     height: 50px;
+     margin-bottom: 10px;
+}
+ .spotify-header h1 {
+     margin: 0;
+}
+ .spotify-user {
+     position: absolute;
+     top: 0;
+     right: 0;
+     display: flex;
+     flex-direction: row;
+     align-items: flex-start;
+     gap: 12px;
+}
+ .spotify-profile {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+}
+ .profile-avatar {
+     width: 42px;
+     height: 42px;
+     border-radius: 50%;
+     object-fit: cover;
+}
+ .spotify-username {
+     font-size: 11px;
+     line-height: 1;
+     color: #666;
+}
+ .profile-avatar {
+     width: 42px;
+     height: 42px;
+     border-radius: 50%;
+     object-fit: cover;
+}
+ .profile-avatar-placeholder {
+     width: 42px;
+     height: 42px;
+     border-radius: 50%;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     background: #eeeeee;
+     font-weight: bold;
+}
+ .spotify-icon {
+     font-size: 42px;
+     cursor: pointer;
+}
+ .spotify-icon:hover {
+     transform: scale(1.1);
+}
+ .spotify-icon.connected {
+     color: #1db954;
+}
+ .spotify-icon.disconnected {
+     color: #bdbdbd;
+}
+/* -------------------------------- */
+/* PLAYER */
+/* -------------------------------- */
+ .spotify-player {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     padding: 32px;
+}
+ .album-cover-large {
+     width: 220px;
+     height: 220px;
+     border-radius: 12px;
+     object-fit: cover;
+     margin-bottom: 24px;
+}
+ .track-title {
+     margin: 0;
+     text-align: center;
+     font-size: 28px;
+}
+ .track-artist {
+     margin-top: 8px;
+     font-size: 18px;
+     color: #555555;
+     text-align: center;
+}
+ .track-album {
+     margin-top: 4px;
+     font-size: 15px;
+     color: #888888;
+     text-align: center;
+}
+ .track-progress {
+     width: 100%;
+     max-width: 500px;
+     margin-top: 24px;
+}
+ .progress-bar {
+     width: 100%;
+}
+ .nothing-playing {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     min-height: 300px;
+}
+ .music-placeholder {
+     font-size: 80px;
+     opacity: 0.2;
+}
+/* -------------------------------- */
+/* DASHBOARD */
+/* -------------------------------- */
+ .dashboard-header {
+     position: relative;
+     margin-bottom: 20px;
+}
+ .dashboard-header h1 {
+     margin: 0;
+}
+ .dashboard-icon {
+     position: absolute;
+     top: 0;
+     right: 0;
+     font-size: 42px;
+     cursor: pointer;
+}
+ .dashboard-icon.connected {
+     color: #1db954;
+}
+ .dashboard-icon.disconnected {
+     color: #bdbdbd;
+}
+/* -------------------------------- */
+/* Loading */
+/* -------------------------------- */
+ .loading-screen {
+     height: 100vh;
+     display: flex;
+     flex-direction: column;
+     justify-content: center;
+     align-items: center;
+     gap: 20px;
+}
+ .loading-cat {
+     font-size: 42px;
+     animation: catBlink 1s infinite;
+}
+ @keyframes catBlink {
+     0% {
+         color: #bdbdbd;
+    }
+     50% {
+         color: #1db954;
+    }
+     100% {
+         color: #bdbdbd;
+    }
+}
+ 
