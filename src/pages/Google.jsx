@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { getGoogleAuthUrl, exchangeGoogleCode } from "../services/googleApi";
+import { getGoogleAuthUrl, exchangeGoogleCode, refreshGoogleToken } from "../services/googleApi";
 import { FaGoogle } from "react-icons/fa";
 
 export default function Google() {
@@ -35,9 +35,51 @@ export default function Google() {
 
         setConnected(true);
       } catch {
-        setConnected(false);
+        try {
+            const refreshToken = localStorage.getItem("google_refresh_token");
 
-        setProfile(null);
+            if (!refreshToken) {
+              throw new Error();
+            }
+
+            const refreshResult = await refreshGoogleToken(refreshToken);
+
+            const refreshData = JSON.parse(refreshResult);
+
+            localStorage.setItem(
+              "google_access_token",
+
+              refreshData.access_token
+            );
+
+            const response = await fetch(
+              "https://www.googleapis.com/oauth2/v2/userinfo",
+
+              {
+                headers: {
+                  Authorization: `Bearer ${refreshData.access_token}`,
+                },
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error();
+            }
+
+            const data = await response.json();
+
+            setProfile(data);
+
+            setConnected(true);
+          } catch {
+            localStorage.removeItem("google_access_token");
+            localStorage.removeItem("google_refresh_token");
+
+            setConnected(false);
+
+            setProfile(null);
+          }
+
       }
     }
 

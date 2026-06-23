@@ -9,6 +9,7 @@ import {
   getWifiStatus,
 } from "./services/koreApi";
 import { isSpotifyConnected } from "./services/spotifyApi";
+import { isGoogleConnected } from "./services/googleApi";
 import "./App.css";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
@@ -24,8 +25,10 @@ function App() {
   const [wifiConnected, setWifiConnected] = useState(false);
   const [wifiIp, setWifiIp] = useState("--");
   const [wifiSsid, setWifiSsid] = useState("--");
+
   const [spotifyConnected, setSpotifyConnected] = useState(false);
-  
+  const [googleConnected, setGoogleConnected] = useState(false);
+
   async function loadUptime() {
     setUptime(await getUptime());
   }
@@ -33,6 +36,7 @@ function App() {
   async function loadWifiStatus() {
     try {
       const wifi = await getWifiStatus();
+
       setWifiConnected(wifi.connected);
       setWifiIp(wifi.ip);
       setWifiSsid(wifi.ssid);
@@ -41,16 +45,28 @@ function App() {
     }
   }
 
+  async function loadSpotifyStatus() {
+    setSpotifyConnected(await isSpotifyConnected());
+  }
+
+  async function loadGoogleStatus() {
+    setGoogleConnected(await isGoogleConnected());
+  }
+
   async function connectToKore() {
     try {
       const result = await autoConnect();
+
       setConnected(result);
 
       if (result) {
         setFirmware(await getFirmwareVersion());
         setUptime(await getUptime());
+
         await loadWifiStatus();
+
         await loadSpotifyStatus();
+        await loadGoogleStatus();
       }
     } catch (error) {
       console.error(error);
@@ -63,9 +79,12 @@ function App() {
   async function disconnectFromKore() {
     try {
       await disconnectSerial();
+
       setConnected(false);
+
       setFirmware("--");
       setUptime("--");
+
       setWifiConnected(false);
       setWifiIp("--");
       setWifiSsid("--");
@@ -74,20 +93,25 @@ function App() {
     }
   }
 
-  async function loadSpotifyStatus() {
-    setSpotifyConnected(await isSpotifyConnected());
-  }
-
   useEffect(() => {
-      async function initialize() {
-        setLoading(true);
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        await connectToKore();
-      }
-      initialize();
-      startWatchers();
-    }, []);
+    async function initialize() {
+      setLoading(true);
 
+      await new Promise((resolve) =>
+        setTimeout(resolve, 50)
+      );
+
+      await connectToKore();
+
+      // Atualiza status dos serviços mesmo sem abrir as abas
+      await loadSpotifyStatus();
+      await loadGoogleStatus();
+    }
+
+    initialize();
+
+    startWatchers();
+  }, []);
 
   useEffect(() => {
     if (!connected) {
@@ -97,7 +121,9 @@ function App() {
     const statusTimer = setInterval(async () => {
       await loadUptime();
       await loadWifiStatus();
+
       await loadSpotifyStatus();
+      await loadGoogleStatus();
     }, 5000);
 
     return () => {
@@ -123,6 +149,7 @@ function App() {
             wifiIp={wifiIp}
             wifiSsid={wifiSsid}
             spotifyConnected={spotifyConnected}
+            googleConnected={googleConnected}
             connectToKore={connectToKore}
             disconnectFromKore={disconnectFromKore}
           />
@@ -139,10 +166,17 @@ function App() {
       </div>
     );
   }
+
   return (
     <div className="app">
-      <Sidebar page={page} setPage={setPage} />
-      <main className="content">{renderPage()}</main>
+      <Sidebar
+        page={page}
+        setPage={setPage}
+      />
+
+      <main className="content">
+        {renderPage()}
+      </main>
     </div>
   );
 }

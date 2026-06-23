@@ -257,6 +257,54 @@ async fn spotify_refresh_token(
     )
 }
 #[tauri::command]
+async fn google_refresh_token(
+    refresh_token: String
+) -> Result<String, String>
+{
+    let client = reqwest::Client::new();
+
+    let response = client
+        .post(
+            "https://oauth2.googleapis.com/token"
+        )
+        .form(
+            &[
+                (
+                    "grant_type",
+                    "refresh_token"
+                ),
+                (
+                    "refresh_token",
+                    &refresh_token
+                ),
+                (
+                    "client_id",
+                    GOOGLE_CLIENT_ID
+                ),
+                (
+                    "client_secret",
+                    GOOGLE_CLIENT_SECRET
+                )
+            ]
+        )
+        .send()
+        .await
+        .map_err(
+            |e| e.to_string()
+        )?;
+
+    let body = response
+        .text()
+        .await
+        .map_err(
+            |e| e.to_string()
+        )?;
+
+    Ok(
+        body
+    )
+}
+#[tauri::command]
 fn google_auth_url() -> String
 {
     let scope =
@@ -864,6 +912,7 @@ pub fn run()
                 spotify_refresh_token,
                 google_auth_url,
                 google_exchange_code,
+                google_refresh_token,
                 auto_connect,
                 get_firmware_version,
                 get_wifi_status,
