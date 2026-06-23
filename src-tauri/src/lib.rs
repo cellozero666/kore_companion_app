@@ -139,7 +139,7 @@ fn disconnect_serial(
 #[tauri::command]
 fn spotify_auth_url() -> String
 {
-    let scope = "user-read-playback-state user-modify-playback-state user-read-currently-playing";
+    let scope = "user-read-private user-read-email user-read-playback-state user-modify-playback-state user-read-currently-playing";
     format!(
         "https://accounts.spotify.com/authorize\
         ?client_id={}\

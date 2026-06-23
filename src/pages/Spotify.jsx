@@ -19,7 +19,73 @@ export default function Spotify() {
   const [connected, setConnected] = useState(false);
   const [profile, setProfile] = useState(null);
   const [currentTrack, setCurrentTrack] = useState(null);
-  const [errorMessage, setErrorMessage] = useState("");
+
+  async function loadProfile() {
+      try {
+        const token = localStorage.getItem("spotify_access_token");
+
+        if (!token) {
+          setConnected(false);
+          setProfile(null);
+          setCurrentTrack(null);
+          return;
+
+        }
+
+        // O Spotify está conectado se temos token válido
+        setConnected(true);
+
+        await loadCurrentTrack();
+
+        try {
+          const profileData = await getSpotifyProfile();
+
+          setProfile(profileData);
+        } catch (profileError) {
+          console.error("Profile error:", profileError);
+        }
+      } catch (error) {
+        console.error(error);
+
+        try {
+          const refreshToken = localStorage.getItem("spotify_refresh_token");
+
+          if (!refreshToken) {
+            throw new Error("No refresh token");
+          }
+
+          const refreshResult = await refreshSpotifyToken(refreshToken);
+
+          const refreshData = JSON.parse(refreshResult);
+
+          localStorage.setItem(
+            "spotify_access_token",
+
+            refreshData.access_token
+          );
+
+          setConnected(true);
+
+          await loadCurrentTrack();
+
+          try {
+            const profileData = await getSpotifyProfile();
+
+            setProfile(profileData);
+          } catch (profileError) {
+            console.error("Profile error:", profileError);
+          }
+        } catch (refreshError) {
+          console.error(refreshError);
+
+          localStorage.removeItem("spotify_access_token");
+
+          localStorage.removeItem("spotify_refresh_token");
+
+          setConnected(false);
+        }
+      }
+    }
 
   async function loadCurrentTrack() {
     try {
@@ -32,31 +98,31 @@ export default function Spotify() {
       }
     } catch (error) {
       console.error(error);
-      setErrorMessage("Erro: " + error.message);
     }
   }
 
   async function sendSpotifyToDevice(trackData) {
-    if (!trackData || !trackData.item || !trackData.is_playing) {
+    if (!trackData || !trackData.item) {
       await sendSerialCommand("spotify_stop");
       return;
     }
-    
+    if (!trackData.is_playing) {
+      await sendSerialCommand("spotify_stop");
+      return;
+    }
     const command = [
       "spotify",
-      sanitize(trackData.item.name),
-      sanitize(trackData.item.artists.map((artist) => artist.name).join(", ")),
-      sanitize(trackData.item.album.name),
+      trackData.item.name,
+      trackData.item.artists.map((artist) => artist.name).join(", "),
+      trackData.item.album.name,
       trackData.progress_ms,
       trackData.item.duration_ms,
       trackData.is_playing ? "1" : "0",
+      trackData.device?.volume_percent ?? 0,
+      trackData.device?.name ?? "",
+      trackData.item.album.images?.[0]?.url ?? "",
     ].join("|");
-    
     await sendSerialCommand(command);
-  }
-
-  function sanitize(text) {
-    return String(text ?? "").replaceAll("|", " ").replaceAll("\n", " ");
   }
 
   async function togglePlayback() {
@@ -86,60 +152,8 @@ export default function Spotify() {
   }
 
   useEffect(() => {
-    async function loadProfile() {
-      try {
-        const token = localStorage.getItem("spotify_access_token");
-
-        if (!token) {
-          return;
-        }
-
-        const profileData = await getSpotifyProfile();
-
-        setProfile(profileData);
-
-        setConnected(true);
-
-        await loadCurrentTrack();
-      } catch (error) {
-        console.error(error);
-
-        try {
-          const refreshToken = localStorage.getItem("spotify_refresh_token");
-
-          if (!refreshToken) {
-            throw new Error("No refresh token");
-          }
-
-          const refreshResult = await refreshSpotifyToken(refreshToken);
-
-          const refreshData = JSON.parse(refreshResult);
-
-          localStorage.setItem(
-            "spotify_access_token",
-            refreshData.access_token
-          );
-
-          const profileData = await getSpotifyProfile();
-
-          setProfile(profileData);
-
-          setConnected(true);
-
-          await loadCurrentTrack();
-        } catch (refreshError) {
-          console.error(refreshError);
-
-          localStorage.removeItem("spotify_access_token");
-
-          localStorage.removeItem("spotify_refresh_token");
-
-          setConnected(false);
-        }
-      }
-    }
-
     loadProfile();
+
 
     let unlisten;
 
@@ -159,18 +173,21 @@ export default function Spotify() {
 
         const tokenData = JSON.parse(result);
 
-        localStorage.setItem("spotify_access_token", tokenData.access_token);
+        localStorage.setItem(
+          "spotify_access_token",
+          tokenData.access_token
+        );
 
-        localStorage.setItem("spotify_refresh_token", tokenData.refresh_token);
+        localStorage.setItem(
+          "spotify_refresh_token",
+          tokenData.refresh_token
+        );
 
-        const profileData = await getSpotifyProfile();
+        await loadProfile();
 
-        setProfile(profileData);
-
-        setConnected(true);
-
-        await loadCurrentTrack();
-      } catch (error) {}
+      } catch (error) {
+        console.error(error);
+      }
     }).then((fn) => {
       unlisten = fn;
     });
@@ -243,7 +260,6 @@ export default function Spotify() {
       </div>
 
       <div className="card spotify-player">
-        {errorMessage && <p style={{color: 'red', fontSize: '12px'}}>{errorMessage}</p>}
         {currentTrack && currentTrack.item ? (
           <>
             <img
