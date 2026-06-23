@@ -8,8 +8,7 @@ export default function Google() {
   const [profile, setProfile] = useState(null);
   const [authCode, setAuthCode] = useState("");
 
-  useEffect(() => {
-    async function loadProfile() {
+  async function loadProfile() {
       try {
         const token = localStorage.getItem("google_access_token");
 
@@ -42,6 +41,7 @@ export default function Google() {
       }
     }
 
+  useEffect(() => {
     loadProfile();
   }, []);
 
@@ -57,19 +57,34 @@ export default function Google() {
   async function handleExchange() {
     try {
       const code = authCode.trim();
-      
       const response = await exchangeGoogleCode(code);
       const data = JSON.parse(response);
-      
-      localStorage.setItem("google_access_token", data.access_token);
-      localStorage.setItem("google_refresh_token", data.refresh_token);
-      
-      setConnected(true);
-      window.location.reload();
+
+      localStorage.setItem(
+        "google_access_token",
+
+        data.access_token
+      );
+
+      if (data.refresh_token) {
+        localStorage.setItem(
+          "google_refresh_token",
+
+          data.refresh_token
+        );
+      }
+      await loadProfile();
+
+      setAuthCode("");
     } catch (error) {
-      console.error("Erro ao trocar código:", error);
+      console.error(
+        "Erro ao trocar código:",
+
+        error
+      );
     }
   }
+
 
   function disconnectGoogle() {
     localStorage.removeItem("google_access_token");
