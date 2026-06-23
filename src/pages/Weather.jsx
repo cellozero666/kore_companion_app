@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { sendSerialCommand } from "../services/koreApi";
 
 export default function Weather() {
   const [weather, setWeather] = useState(null);
@@ -6,63 +7,7 @@ export default function Weather() {
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState("");
 
-  async function loadWeather() {
-    try {
-      const autoDetect = localStorage.getItem("weather_autodetect") !== "false";
-
-      let cityName = "Unknown";
-      let latitude;
-      let longitude;
-
-      if (!autoDetect) {
-        cityName = localStorage.getItem("weather_city") || "Unknown";
-
-        latitude = localStorage.getItem("weather_latitude");
-
-        longitude = localStorage.getItem("weather_longitude");
-
-        if (!latitude || !longitude) {
-          throw new Error("No saved coordinates");
-        }
-      } else {
-        const locationResponse = await fetch("https://ipinfo.io/json");
-
-        const locationData = await locationResponse.json();
-
-        cityName = locationData.city || "Unknown";
-
-        const coords = locationData.loc?.split(",");
-
-        if (!coords) {
-          throw new Error("No coordinates returned");
-        }
-
-        latitude = coords[0];
-        longitude = coords[1];
-      }
-
-      setCity(cityName);
-
-      const weatherResponse = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
-      );
-
-      const weatherData = await weatherResponse.json();
-
-      setWeather({
-        temp: Math.round(weatherData.current.temperature_2m),
-        max: Math.round(weatherData.daily.temperature_2m_max[0]),
-        min: Math.round(weatherData.daily.temperature_2m_min[0]),
-        code: weatherData.current.weather_code,
-      });
-
-      setLastUpdate(new Date().toLocaleTimeString());
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const lastWeatherPayload = useRef("");
 
   function getWeatherText(code) {
     if (code === 0) {
@@ -108,10 +53,126 @@ export default function Weather() {
     return "⛈️";
   }
 
+  async function loadWeather() {
+    try {
+      const autoDetect =
+        localStorage.getItem("weather_autodetect") !== "false";
+
+      let cityName = "Unknown";
+      let latitude;
+      let longitude;
+
+      if (!autoDetect) {
+        cityName =
+          localStorage.getItem("weather_city") ||
+          "Unknown";
+
+        latitude =
+          localStorage.getItem("weather_latitude");
+
+        longitude =
+          localStorage.getItem("weather_longitude");
+
+        if (!latitude || !longitude) {
+          throw new Error("No saved coordinates");
+        }
+      } else {
+        const locationResponse =
+          await fetch("https://ipinfo.io/json");
+
+        const locationData =
+          await locationResponse.json();
+
+        cityName =
+          locationData.city || "Unknown";
+
+        const coords =
+          locationData.loc?.split(",");
+
+        if (!coords) {
+          throw new Error(
+            "No coordinates returned"
+          );
+        }
+
+        latitude = coords[0];
+        longitude = coords[1];
+      }
+
+      setCity(cityName);
+
+      const weatherResponse =
+        await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`
+        );
+
+      const weatherData =
+        await weatherResponse.json();
+
+      const temp =
+        Math.round(
+          weatherData.current.temperature_2m
+        );
+
+      const max =
+        Math.round(
+          weatherData.daily.temperature_2m_max[0]
+        );
+
+      const min =
+        Math.round(
+          weatherData.daily.temperature_2m_min[0]
+        );
+
+      const code =
+        weatherData.current.weather_code;
+
+      setWeather({
+        temp,
+        max,
+        min,
+        code,
+      });
+
+      const payload = [
+        "weather",
+        cityName,
+        temp,
+        max,
+        min,
+        code
+      ].join("|");
+
+      if (
+        payload !==
+        lastWeatherPayload.current
+      ) {
+        await sendSerialCommand(
+          payload
+        );
+
+        lastWeatherPayload.current =
+          payload;
+      }
+
+      setLastUpdate(
+        new Date().toLocaleTimeString()
+      );
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     loadWeather();
 
-    const timer = setInterval(loadWeather, 1000 * 60 * 60);
+    const timer =
+      setInterval(
+        loadWeather,
+        1000 * 60 * 20
+      );
 
     return () => clearInterval(timer);
   }, []);
@@ -142,12 +203,17 @@ export default function Weather() {
 
       <div className="card spotify-player">
         <div className="weather-container">
-          <h2 className="weather-city">{city}</h2>
+          <h2 className="weather-city">
+            {city}
+          </h2>
 
-          <h1 className="weather-temperature">{weather.temp}°</h1>
+          <h1 className="weather-temperature">
+            {weather.temp}°
+          </h1>
 
           <p className="weather-condition">
-            {getIcon(weather.code)} {getWeatherText(weather.code)}
+            {getIcon(weather.code)}{" "}
+            {getWeatherText(weather.code)}
           </p>
 
           <p className="weather-minmax">
@@ -155,7 +221,9 @@ export default function Weather() {
             Min {weather.min}°
           </p>
 
-          <p className="weather-update">Updated at {lastUpdate}</p>
+          <p className="weather-update">
+            Updated at {lastUpdate}
+          </p>
         </div>
       </div>
     </>
