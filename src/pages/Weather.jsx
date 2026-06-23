@@ -50,7 +50,42 @@ export default function Weather() {
       return "🌧️";
     }
 
+    if (code <= 77) {
+      return "❄️";
+    }
+
     return "⛈️";
+  }
+
+  // ESP32 weather_icons.h
+  // 0 = ICON_CLOUD
+  // 1 = ICON_PARTLYCLOUD
+  // 2 = ICON_RAIN
+  // 3 = ICON_SNOW
+  // 4 = ICON_STORM
+  // 5 = ICON_SUN
+  function getWeatherIconIndex(code) {
+    if (code === 0) {
+      return 5;
+    }
+
+    if (code <= 3) {
+      return 1;
+    }
+
+    if (code <= 48) {
+      return 0;
+    }
+
+    if (code <= 67) {
+      return 2;
+    }
+
+    if (code <= 77) {
+      return 3;
+    }
+
+    return 4;
   }
 
   async function loadWeather() {
@@ -134,13 +169,16 @@ export default function Weather() {
         code,
       });
 
+      const iconIndex =
+        getWeatherIconIndex(code);
+
       const payload = [
         "weather",
         cityName,
         temp,
         max,
         min,
-        code
+        iconIndex
       ].join("|");
 
       if (
