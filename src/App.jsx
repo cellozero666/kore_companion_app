@@ -15,6 +15,8 @@ import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import Spotify from "./pages/Spotify";
 import Google from "./pages/Google";
+import Weather from "./pages/Weather";
+import Settings from "./pages/Settings";
 
 function App() {
   const [page, setPage] = useState("dashboard");
@@ -138,6 +140,12 @@ function App() {
 
       case "google":
         return <Google />;
+
+      case "weather":
+        return <Weather />;
+
+      case "settings":
+        return <Settings />;
 
       default:
         return (

@@ -2,7 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
+
     <key>NSAccessibilityUsageDescription</key>
     <string>K.O.R.E. precisa de acesso à acessibilidade para ler notificações do sistema e exibi-las no seu dispositivo.</string>
+
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>K.O.R.E. usa sua localização para exibir informações meteorológicas da sua região.</string>
+
   </dict>
 </plist>

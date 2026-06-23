@@ -31,7 +31,7 @@
      margin-bottom: 8px;
 }
 /* -------------------------------- */
-/* SPOTIFY */
+/* SPOTIFY                          */
 /* -------------------------------- */
 .sidebar {
      width: 200px;
@@ -84,7 +84,7 @@
 }
 
 /* -------------------------------- */
-/* SPOTIFY */
+/* SPOTIFY                          */
 /* -------------------------------- */
  .spotify-header {
      position: relative;
@@ -149,7 +149,7 @@
      color: #bdbdbd;
 }
 /* -------------------------------- */
-/* PLAYER */
+/* PLAYER                           */
 /* -------------------------------- */
  .spotify-player {
      display: flex;
@@ -201,7 +201,7 @@
      opacity: 0.2;
 }
 /* -------------------------------- */
-/* DASHBOARD */
+/* DASHBOARD                        */
 /* -------------------------------- */
  .dashboard-header {
      position: relative;
@@ -224,7 +224,7 @@
      color: #bdbdbd;
 }
 /* -------------------------------- */
-/* Loading */
+/* Loading                          */
 /* -------------------------------- */
  .loading-screen {
      height: 100vh;
@@ -249,4 +249,32 @@
          color: #bdbdbd;
     }
 }
- 
+
+/* -------------------------------- */
+/* WEATHER                          */
+/* -------------------------------- */
+.weather-container {
+  text-align: center;
+}
+.weather-city {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+.weather-temperature {
+  font-size: 64px;
+  margin: 10px 0;
+  font-weight: 700;
+}
+.weather-condition {
+  font-size: 18px;
+  margin-top: 10px;
+}
+.weather-minmax {
+  margin-top: 10px;
+  opacity: 0.9;
+}
+.weather-update {
+  margin-top: 20px;
+  font-size: 12px;
+  opacity: 0.7;
+}

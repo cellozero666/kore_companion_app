@@ -34,15 +34,22 @@ export default function Sidebar({ page, setPage }) {
           Google
         </button>
 
-        <button>
+        <button
+          className={page === "weather" ? "active" : ""}
+          onClick={() => setPage("weather")}
+        >
           <FaCloudSun className="sidebar-icon weather" />
           Weather
         </button>
 
-        <button>
+        <button
+          className={page === "settings" ? "active" : ""}
+          onClick={() => setPage("settings")}
+        >
           <FaCog className="sidebar-icon settings" />
           Settings
         </button>
+
       </nav>
     </aside>
   );
