@@ -1,99 +1,56 @@
 import { invoke } from "@tauri-apps/api/core";
 
-export async function listPorts() {
+async function request(command, args = {}) {
   try {
-    return await invoke("list_ports");
+    return await invoke(command, args);
   } catch (error) {
     console.error("K.O.R.E. API Error:", error);
-
     throw error;
   }
+}
+
+export async function listPorts() {
+  return await request("list_ports");
 }
 
 export async function connectSerial(portName) {
-  try {
-    return await invoke("connect_serial", {
-      portName,
-    });
-  } catch (error) {
-    console.error("K.O.R.E. API Error:", error);
-    throw error;
-  }
+  return await request("connect_serial", {
+    portName,
+  });
 }
 
 export async function disconnectSerial() {
-  try {
-    return await invoke("disconnect_serial");
-  } catch (error) {
-    console.error("K.O.R.E. API Error:", error);
-    throw error;
-  }
+  return await request("disconnect_serial");
 }
 
-
 export async function autoConnect() {
-  try {
-    return await invoke("auto_connect");
-  } catch (error) {
-    console.error("K.O.R.E. API Error:", error);
-    throw error;
-  }
+  return await request("auto_connect");
 }
 
 export async function getFirmwareVersion() {
-  try {
-    return await invoke("get_firmware_version");
-  } catch (error) {
-    console.error("K.O.R.E. API Error:", error);
-
-    throw error;
-  }
+  return await request("get_firmware_version");
 }
 
 export async function getCurrentFace() {
-  try {
-    return await invoke("get_current_face");
-  } catch (error) {
-    console.error("K.O.R.E. API Error:", error);
-
-    throw error;
-  }
+  return await request("get_current_face");
 }
 
 export async function getUptime() {
-  try {
-    return await invoke("get_uptime");
-  } catch (error) {
-    console.error("K.O.R.E. API Error:", error);
-
-    throw error;
-  }
+  return await request("get_uptime");
 }
 
 export async function sendSerialCommand(command) {
-  try {
-    return await invoke("send_serial_command", {
-      command,
-    });
-  } catch (error) {
-    console.error("K.O.R.E. API Error:", error);
-
-    throw error;
-  }
+  return await request("send_serial_command", {
+    command,
+  });
 }
 
 export async function getWifiStatus() {
-  try {
-    const response = await invoke("get_wifi_status");
-    const parts = response.split("|");
-    return {
-      connected: parts[0] === "CONNECTED",
-      ssid: parts[1] ?? "--",
-      ip: parts[2] ?? "--",
-    };
-  } catch (error) {
-    console.error("K.O.R.E. API Error:", error);
-    throw error;
-  }
+  const response = await request("get_wifi_status");
+  const parts = response.split("|");
+  return {
+    connected: parts[0] === "CONNECTED",
+    ssid: parts[1] ?? "--",
+    ip: parts[2] ?? "--",
+  };
 }
-
