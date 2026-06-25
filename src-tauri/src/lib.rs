@@ -486,6 +486,22 @@ fn auto_connect(
     false
 }
 
+
+fn execute_serial_query(
+    port: &mut Box<dyn SerialPort>,
+    command: &str,
+    error_fallback: &str
+) -> String {
+    let data = format!("{}\n", command);
+    let _ = port.write_all(data.as_bytes());
+    std::thread::sleep(Duration::from_millis(200));
+    let mut buffer = [0u8; 256];
+    match port.read(&mut buffer) {
+        Ok(size) => String::from_utf8_lossy(&buffer[..size]).trim().to_string(),
+        Err(_) => error_fallback.to_string(),
+    }
+}
+
 #[tauri::command]
 fn get_firmware_version(
     state: tauri::State<AppState>
@@ -499,48 +515,8 @@ fn get_firmware_version(
 
     match serial_port.as_mut()
     {
-        Some(port) =>
-        {
-            let _ =
-                port.write_all(
-                    b"version\n"
-                );
-
-            std::thread::sleep(
-                Duration::from_millis(
-                    200
-                )
-            );
-
-            let mut buffer =
-                [0u8; 256];
-
-            match port.read(
-                &mut buffer
-            )
-            {
-                Ok(size) =>
-                {
-                    String::from_utf8_lossy(
-                        &buffer[..size]
-                    )
-                    .trim()
-                    .to_string()
-                }
-
-                Err(_) =>
-                {
-                    "Unknown"
-                        .to_string()
-                }
-            }
-        }
-
-        None =>
-        {
-            "Disconnected"
-                .to_string()
-        }
+        Some(port) => execute_serial_query(port, "version", "Unknown"),
+        None => "Disconnected".to_string(),
     }
 }
 
@@ -555,43 +531,8 @@ fn get_wifi_status(
         .unwrap();
 
     match serial_port.as_mut() {
-        Some(port) => {
-            let _ =
-                port.write_all(
-                    b"wifi_status\n"
-                );
-
-            std::thread::sleep(
-                Duration::from_millis(
-                    200
-                )
-            );
-
-            let mut buffer =
-                [0u8; 256];
-
-            match port.read(
-                &mut buffer
-            ) {
-                Ok(size) => {
-                    String::from_utf8_lossy(
-                        &buffer[..size]
-                    )
-                    .trim()
-                    .to_string()
-                }
-
-                Err(_) => {
-                    "DISCONNECTED|--|--"
-                        .to_string()
-                }
-            }
-        }
-
-        None => {
-            "DISCONNECTED|--|--"
-                .to_string()
-        }
+        Some(port) => execute_serial_query(port, "wifi_status", "DISCONNECTED|--|--"),
+        None => "DISCONNECTED|--|--".to_string(),
     }
 }
 
@@ -608,48 +549,8 @@ fn get_current_face(
 
     match serial_port.as_mut()
     {
-        Some(port) =>
-        {
-            let _ =
-                port.write_all(
-                    b"current_face\n"
-                );
-
-            std::thread::sleep(
-                Duration::from_millis(
-                    200
-                )
-            );
-
-            let mut buffer =
-                [0u8; 256];
-
-            match port.read(
-                &mut buffer
-            )
-            {
-                Ok(size) =>
-                {
-                    String::from_utf8_lossy(
-                        &buffer[..size]
-                    )
-                    .trim()
-                    .to_string()
-                }
-
-                Err(_) =>
-                {
-                    "Unknown"
-                        .to_string()
-                }
-            }
-        }
-
-        None =>
-        {
-            "Disconnected"
-                .to_string()
-        }
+        Some(port) => execute_serial_query(port, "current_face", "Unknown"),
+        None => "Disconnected".to_string(),
     }
 }
 
@@ -666,48 +567,8 @@ fn get_uptime(
 
     match serial_port.as_mut()
     {
-        Some(port) =>
-        {
-            let _ =
-                port.write_all(
-                    b"uptime\n"
-                );
-
-            std::thread::sleep(
-                Duration::from_millis(
-                    200
-                )
-            );
-
-            let mut buffer =
-                [0u8; 256];
-
-            match port.read(
-                &mut buffer
-            )
-            {
-                Ok(size) =>
-                {
-                    String::from_utf8_lossy(
-                        &buffer[..size]
-                    )
-                    .trim()
-                    .to_string()
-                }
-
-                Err(_) =>
-                {
-                    "Unknown"
-                        .to_string()
-                }
-            }
-        }
-
-        None =>
-        {
-            "Disconnected"
-                .to_string()
-        }
+        Some(port) => execute_serial_query(port, "uptime", "Unknown"),
+        None => "Disconnected".to_string(),
     }
 }
 
