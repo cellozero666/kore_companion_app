@@ -193,13 +193,13 @@ export default function Google() {
           <div className="nothing-playing">
             <div className="music-placeholder">G</div>
             <h2>Google Not Connected</h2>
-            <div className="auth-box" style={{ marginTop: '20px' }}>
+            <div className="auth-box">
               <input 
                 type="text" 
                 placeholder="Cole o código aqui" 
                 value={authCode}
                 onChange={(e) => setAuthCode(e.target.value)}
-                style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
+                className="auth-input"
               />
               <button onClick={handleExchange}>Finalizar Autenticação</button>
             </div>

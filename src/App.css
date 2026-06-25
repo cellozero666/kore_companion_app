@@ -314,3 +314,15 @@
   cursor: pointer;
   font-size: 18px;
 }
+
+/* -------------------------------- */
+/* AUTH                             */
+/* -------------------------------- */
+.auth-box {
+  margin-top: 20px;
+}
+.auth-input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 10px;
+}
