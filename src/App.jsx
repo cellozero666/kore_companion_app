@@ -17,6 +17,7 @@ import Spotify from "./pages/Spotify";
 import Google from "./pages/Google";
 import Weather from "./pages/Weather";
 import Settings from "./pages/Settings";
+import { NotificationManager } from "./components/NotificationManager";
 
 function App() {
   const [page, setPage] = useState("dashboard");
@@ -43,7 +44,7 @@ function App() {
       setWifiIp(wifi.ip);
       setWifiSsid(wifi.ssid);
     } catch (error) {
-      console.error(error);
+      // Notification handled by koreApi.js
     }
   }
 
@@ -71,7 +72,7 @@ function App() {
         await loadGoogleStatus();
       }
     } catch (error) {
-      console.error(error);
+      // Notification handled by koreApi.js
       setConnected(false);
     } finally {
       setLoading(false);
@@ -91,7 +92,7 @@ function App() {
       setWifiIp("--");
       setWifiSsid("--");
     } catch (error) {
-      console.error(error);
+      // Notification handled by koreApi.js
     }
   }
 
@@ -177,6 +178,7 @@ function App() {
 
   return (
     <div className="app">
+      <NotificationManager />
       <Sidebar
         page={page}
         setPage={setPage}

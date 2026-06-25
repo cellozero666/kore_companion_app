@@ -1,6 +1,7 @@
 import { getCurrentPlaying } from "./spotifyApi";
 import { sendSerialCommand } from "./koreApi";
 import { setCurrentState } from "./notificationManager";
+import { emit } from "@tauri-apps/api/event";
 
 let interval = null;
 let spotifyPlaying = false;
@@ -56,7 +57,16 @@ async function pollSpotify() {
     setCurrentState(command);
     await sendSerialCommand(command);
   } catch (error) {
-    console.error(error);
+    await emit("app-notification", {
+        source: "spotify",
+        code: "SPOTIFY_WATCHER_ERROR",
+        level: "error",
+        title: "Erro no Spotify",
+        message: `Erro ao buscar status do Spotify: ${error.message}`,
+        duration: 5000,
+        persistent: false,
+        priority: "high"
+    });
   }
 }
 

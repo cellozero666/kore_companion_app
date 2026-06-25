@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { getGoogleAuthUrl, exchangeGoogleCode, refreshGoogleToken } from "../services/googleApi";
 import { FaGoogle } from "react-icons/fa";
+import { emit } from "@tauri-apps/api/event";
 
 export default function Google() {
   const [connected, setConnected] = useState(false);
@@ -92,7 +93,16 @@ export default function Google() {
       const authUrl = await getGoogleAuthUrl();
       await openUrl(authUrl);
     } catch (error) {
-      console.error(error);
+      await emit("app-notification", {
+        source: "google_auth",
+        code: "AUTH_URL_ERROR",
+        level: "error",
+        title: "Erro de Autenticação",
+        message: `Não foi possível iniciar a autenticação: ${error}`,
+        duration: 5000,
+        persistent: false,
+        priority: "high"
+      });
     }
   }
 
@@ -119,11 +129,16 @@ export default function Google() {
 
       setAuthCode("");
     } catch (error) {
-      console.error(
-        "Erro ao trocar código:",
-
-        error
-      );
+      await emit("app-notification", {
+        source: "google_auth",
+        code: "EXCHANGE_ERROR",
+        level: "error",
+        title: "Erro de Autenticação",
+        message: `Erro ao trocar código: ${error}`,
+        duration: 5000,
+        persistent: false,
+        priority: "high"
+      });
     }
   }
 

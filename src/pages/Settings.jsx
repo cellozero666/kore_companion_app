@@ -3,6 +3,7 @@ import Select from "react-select";
 import AsyncSelect from "react-select/async";
 import { countries } from "../data/countries";
 import { sendSerialCommand } from "../services/koreApi";
+import { emit } from "@tauri-apps/api/event";
 
 export default function Settings() {
   const [autoDetect, setAutoDetect] = useState(true);
@@ -84,16 +85,6 @@ export default function Settings() {
       const data =
         await response.json();
 
-      console.log(
-        "Open Meteo Results:",
-        data.results
-      );
-
-      console.log(
-        "Selected Country:",
-        country
-      );
-
       let results =
         data.results || [];
 
@@ -106,11 +97,6 @@ export default function Settings() {
           );
       }
 
-      console.log(
-        "Filtered Results:",
-        results
-      );
-
       return results.map(
         (item) => ({
           value: item.id,
@@ -122,7 +108,16 @@ export default function Settings() {
         })
       );
     } catch (error) {
-      console.error(error);
+      await emit("app-notification", {
+        source: "settings",
+        code: "LOCATION_SEARCH_ERROR",
+        level: "error",
+        title: "Erro nas Configurações",
+        message: `Erro ao buscar cidades: ${error.message}`,
+        duration: 5000,
+        persistent: false,
+        priority: "high"
+      });
 
       return [];
     }
@@ -159,10 +154,6 @@ export default function Settings() {
         city.longitude
       );
     }
-
-    alert(
-      "Location saved"
-    );
   }
 
   async function saveWiFi() {
@@ -170,12 +161,17 @@ export default function Settings() {
       await sendSerialCommand(
         `wifi_connect|${wifiSsid}|${wifiPassword}`
       );
-
-      alert(
-        "WiFi configuration sent"
-      );
     } catch (error) {
-      console.error(error);
+      await emit("app-notification", {
+        source: "settings",
+        code: "WIFI_CONFIG_ERROR",
+        level: "error",
+        title: "Erro no WiFi",
+        message: `Erro ao configurar WiFi: ${error.message}`,
+        duration: 5000,
+        persistent: false,
+        priority: "high"
+      });
     }
   }
 

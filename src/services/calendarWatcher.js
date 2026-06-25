@@ -1,4 +1,5 @@
 import { enqueueNotification } from "./notificationManager";
+import { emit } from "@tauri-apps/api/event";
 
 let interval = null;
 let lastEventId = localStorage.getItem("last_event_id") || null;
@@ -41,6 +42,15 @@ async function pollCalendar() {
     localStorage.setItem("last_event_id", lastEventId);
 
   } catch (error) {
-    console.error("Erro ao buscar Calendário:", error);
+    await emit("app-notification", {
+        source: "calendar",
+        code: "CALENDAR_WATCHER_ERROR",
+        level: "error",
+        title: "Erro no Calendário",
+        message: `Erro ao buscar Calendário: ${error.message}`,
+        duration: 5000,
+        persistent: false,
+        priority: "high"
+    });
   }
 }

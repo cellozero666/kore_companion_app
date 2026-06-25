@@ -4,11 +4,13 @@ import ApplicationServices
 
 private var observer: AXObserver?
 
-@_silgen_name("emit_notification")
-func emit_notification(
-    _ app: UnsafePointer<CChar>,
+@_silgen_name("emit_notification_ffi")
+func emit_notification_ffi(
+    _ source: UnsafePointer<CChar>,
+    _ code: UnsafePointer<CChar>,
+    _ level: UnsafePointer<CChar>,
     _ title: UnsafePointer<CChar>,
-    _ body: UnsafePointer<CChar>
+    _ message: UnsafePointer<CChar>
 )
 
 // --------------------------------------------------
@@ -36,7 +38,13 @@ public func start_notification_watcher_native() {
         }
     ) else {
 
-        print("Notification Center not found")
+        "watcher".withCString { source in
+        "NOTIFICATION_CENTER_NOT_FOUND".withCString { code in
+        "error".withCString { level in
+        "Falha no Watcher".withCString { title in
+        "Notification Center não encontrado".withCString { message in
+            emit_notification_ffi(source, code, level, title, message)
+        }}}}}
         return
     }
 
@@ -52,7 +60,13 @@ public func start_notification_watcher_native() {
           let observer = observer
     else {
 
-        print("Failed to create AXObserver")
+        "watcher".withCString { source in
+        "AX_OBSERVER_FAILED".withCString { code in
+        "error".withCString { level in
+        "Falha no Watcher".withCString { title in
+        "Falha ao criar AXObserver".withCString { message in
+            emit_notification_ffi(source, code, level, title, message)
+        }}}}}
         return
     }
 
@@ -117,12 +131,11 @@ private func extractNotification(
             app.withCString { appCString in
                 title.withCString { titleCString in
                     body.withCString { bodyCString in
-
-                        emit_notification(
-                            appCString,
-                            titleCString,
-                            bodyCString
-                        )
+                        "watcher".withCString { source in
+                        "SYSTEM_NOTIFICATION".withCString { code in
+                        "info".withCString { level in
+                            emit_notification_ffi(source, code, level, titleCString, bodyCString)
+                        }}}
                     }
                 }
             }

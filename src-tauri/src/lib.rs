@@ -76,14 +76,45 @@ fn list_ports() -> Vec<String>
     ports_list
 }
 
+use serde_json::json;
+
+fn emit_app_notification(handle: &AppHandle, source: &str, code: &str, level: &str, title: &str, message: &str) {
+    let _ = handle.emit("app-notification", json!({
+        "source": source,
+        "code": code,
+        "level": level,
+        "title": title,
+        "message": message
+    }));
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn emit_notification_ffi(
+    source: *const c_char,
+    code: *const c_char,
+    level: *const c_char,
+    title: *const c_char,
+    message: *const c_char,
+) {
+    if let Some(handle) = APP_HANDLE.get() {
+        let source = unsafe { CStr::from_ptr(source).to_string_lossy() };
+        let code = unsafe { CStr::from_ptr(code).to_string_lossy() };
+        let level = unsafe { CStr::from_ptr(level).to_string_lossy() };
+        let title = unsafe { CStr::from_ptr(title).to_string_lossy() };
+        let message = unsafe { CStr::from_ptr(message).to_string_lossy() };
+        emit_app_notification(handle, &source, &code, &level, &title, &message);
+    }
+}
+
 #[tauri::command]
 fn connect_serial(
     port_name: String,
-    state: tauri::State<AppState>
+    state: tauri::State<AppState>,
+    app_handle: AppHandle
 ) -> bool
 {
     match serialport::new(
-        port_name,
+        port_name.clone(),
         115200
     )
     .timeout(
@@ -109,11 +140,7 @@ fn connect_serial(
 
         Err(error) =>
         {
-            eprintln!(
-                "Connection error: {}",
-                error
-            );
-
+            emit_app_notification(&app_handle, "serial", "CONNECTION_FAILED", "error", "Falha de Conexão", &format!("Não foi possível conectar na porta {}: {}", port_name, error));
             false
         }
     }
@@ -610,11 +637,9 @@ fn send_serial_command(
 
                 Err(error) =>
                 {
-                    println!(
-                        "Write error: {}",
-                        error
-                    );
-
+                    if let Some(handle) = APP_HANDLE.get() {
+                        emit_app_notification(handle, "serial", "WRITE_ERROR", "error", "Falha na Serial", &format!("Erro ao escrever: {}", error));
+                    }
                     false
                 }
             }
@@ -622,10 +647,9 @@ fn send_serial_command(
 
         None =>
         {
-            println!(
-                "No serial connection"
-            );
-
+            if let Some(handle) = APP_HANDLE.get() {
+                emit_app_notification(handle, "serial", "NO_CONNECTION", "error", "Falha na Serial", "Nenhuma conexão serial ativa");
+            }
             false
         }
     }

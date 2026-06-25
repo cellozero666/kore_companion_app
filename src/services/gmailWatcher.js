@@ -1,4 +1,5 @@
 import { enqueueNotification } from "./notificationManager";
+import { emit } from "@tauri-apps/api/event";
 
 let interval = null;
 let lastEmailId = localStorage.getItem("last_email_id") || null;
@@ -13,11 +14,9 @@ async function pollGmail() {
   try {
     const token = localStorage.getItem("google_access_token");
     if (!token) {
-      console.log("Gmail Watcher: Token não encontrado");
       return;
     }
 
-    console.log("Gmail Watcher: Buscando e-mails...");
     const response = await fetch(
       "https://gmail.googleapis.com/gmail/v1/users/me/messages?q=is:unread&maxResults=1",
       {
@@ -27,21 +26,27 @@ async function pollGmail() {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Gmail Watcher: Erro na API (${response.status}):`, errorText);
+      await emit("app-notification", {
+        source: "gmail",
+        code: "GMAIL_API_ERROR",
+        level: "error",
+        title: "Erro no Gmail",
+        message: `Erro na API (${response.status}): ${errorText}`,
+        duration: 5000,
+        persistent: false,
+        priority: "high"
+      });
       return;
     }
 
     const data = await response.json();
-    console.log("Gmail Watcher: Resposta da API:", data);
 
     if (!data.messages || data.messages.length === 0) {
-      console.log("Gmail Watcher: Nenhum e-mail não lido encontrado");
       return;
     }
 
     const message = data.messages[0];
     if (message.id === lastEmailId) {
-      console.log("Gmail Watcher: E-mail já processado");
       return;
     }
 
@@ -54,7 +59,16 @@ async function pollGmail() {
     );
 
     if (!detailResponse.ok) {
-        console.error("Gmail Watcher: Erro ao buscar detalhes do e-mail");
+        await emit("app-notification", {
+            source: "gmail",
+            code: "GMAIL_DETAIL_ERROR",
+            level: "error",
+            title: "Erro no Gmail",
+            message: "Erro ao buscar detalhes do e-mail",
+            duration: 5000,
+            persistent: false,
+            priority: "high"
+        });
         return;
     }
 
@@ -65,8 +79,6 @@ async function pollGmail() {
     // Limpa o nome do remetente (tira o e-mail entre < >)
     const sender = fromHeader.split('<')[0].trim();
 
-    console.log("Gmail Watcher: E-mail encontrado:", sender, subjectHeader);
-
     // Envia para o KORE
     enqueueNotification("email", sender, subjectHeader);
 
@@ -75,6 +87,15 @@ async function pollGmail() {
     localStorage.setItem("last_email_id", lastEmailId);
 
   } catch (error) {
-    console.error("Erro ao buscar Gmail:", error);
+    await emit("app-notification", {
+        source: "gmail",
+        code: "GMAIL_WATCHER_ERROR",
+        level: "error",
+        title: "Erro no Gmail",
+        message: `Erro ao buscar Gmail: ${error.message}`,
+        duration: 5000,
+        persistent: false,
+        priority: "high"
+    });
   }
 }

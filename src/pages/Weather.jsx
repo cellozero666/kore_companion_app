@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { sendSerialCommand } from "../services/koreApi";
+import { emit } from "@tauri-apps/api/event";
 
 export default function Weather() {
   const [weather, setWeather] = useState(null);
@@ -197,7 +198,16 @@ export default function Weather() {
         new Date().toLocaleTimeString()
       );
     } catch (error) {
-      console.error(error);
+      await emit("app-notification", {
+        source: "weather",
+        code: "WEATHER_DATA_ERROR",
+        level: "error",
+        title: "Erro no Clima",
+        message: `Erro ao buscar dados do clima: ${error.message}`,
+        duration: 5000,
+        persistent: false,
+        priority: "high"
+      });
     } finally {
       setLoading(false);
     }

@@ -1,10 +1,20 @@
 import { invoke } from "@tauri-apps/api/core";
+import { emit } from "@tauri-apps/api/event";
 
 async function request(command, args = {}) {
   try {
     return await invoke(command, args);
   } catch (error) {
-    console.error("K.O.R.E. API Error:", error);
+    await emit("app-notification", {
+      source: "api",
+      code: "API_ERROR",
+      level: "error",
+      title: "Erro na API",
+      message: error.toString(),
+      duration: 5000,
+      persistent: false,
+      priority: "high"
+    });
     throw error;
   }
 }
