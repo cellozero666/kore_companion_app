@@ -1,4 +1,6 @@
 import { FaCat } from "react-icons/fa";
+import { useState } from "react";
+import { sendSerialCommand } from "../services/koreApi";
 
 export default function Dashboard({
   connected,
@@ -12,6 +14,15 @@ export default function Dashboard({
   connectToKore,
   disconnectFromKore,
 }) {
+  const [serialCmd, setSerialCmd] = useState("");
+
+  async function handleSendSerial() {
+    if (serialCmd) {
+      await sendSerialCommand(serialCmd);
+      setSerialCmd("");
+    }
+  }
+
   function formatUptime(uptimeSeconds) {
     const seconds = parseInt(uptimeSeconds, 10);
 
@@ -61,6 +72,17 @@ export default function Dashboard({
           WiFi: {wifiConnected ? ` Connected (${wifiSsid})` : " Disconnected"}
         </p>
         <p>IP: {wifiIp}</p>
+      </div>
+
+      <div className="card">
+        <h2>Serial Test</h2>
+        <input 
+            type="text" 
+            placeholder="Command" 
+            value={serialCmd}
+            onChange={(e) => setSerialCmd(e.target.value)}
+        />
+        <button onClick={handleSendSerial}>Send</button>
       </div>
     </>
   );
