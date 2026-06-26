@@ -4,6 +4,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 use tauri::Emitter;
 use tauri::AppHandle;
+use tauri::Manager;
 use tauri_plugin_deep_link::DeepLinkExt;
 use serialport::SerialPort;
 use std::ffi::CStr;
@@ -102,7 +103,17 @@ pub extern "C" fn emit_notification_ffi(
         let level = unsafe { CStr::from_ptr(level).to_string_lossy() };
         let title = unsafe { CStr::from_ptr(title).to_string_lossy() };
         let message = unsafe { CStr::from_ptr(message).to_string_lossy() };
+        
+        // 1. Emit to UI
         emit_app_notification(handle, &source, &code, &level, &title, &message);
+
+        // 2. Send to Serial (Hardware)
+        let state = handle.state::<AppState>();
+        let mut serial_port = state.serial_port.lock().unwrap();
+        if let Some(port) = serial_port.as_mut() {
+            let command = format!("notification|{}|{}|{}\n", source, title, message);
+            let _ = port.write_all(command.as_bytes());
+        }
     }
 }
 
