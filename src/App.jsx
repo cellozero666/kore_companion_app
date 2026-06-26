@@ -7,6 +7,7 @@ import {
   getFirmwareVersion,
   getUptime,
   getWifiStatus,
+  syncClock,
 } from "./services/koreApi";
 import { isSpotifyConnected } from "./services/spotifyApi";
 import { isGoogleConnected } from "./services/googleApi";
@@ -121,6 +122,19 @@ function App() {
       return;
     }
 
+    syncClock();
+
+    const clockTimer = setInterval(() => {
+        const now = new Date();
+
+        if (
+            now.getMinutes() === 0 &&
+            now.getSeconds() === 0
+        ) {
+            syncClock();
+        }
+    }, 1000);
+
     const statusTimer = setInterval(async () => {
       await loadUptime();
       await loadWifiStatus();
@@ -131,6 +145,7 @@ function App() {
 
     return () => {
       clearInterval(statusTimer);
+      clearInterval(clockTimer);
     };
   }, [connected]);
 

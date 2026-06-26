@@ -64,3 +64,10 @@ export async function getWifiStatus() {
     ip: parts[2] ?? "--",
   };
 }
+
+export async function syncClock() {
+  const now = new Date();
+  return await sendSerialCommand(
+    `time|${now.getHours()}|${now.getMinutes()}|${now.getSeconds()}`
+  );
+}
