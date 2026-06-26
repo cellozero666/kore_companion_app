@@ -131,11 +131,10 @@ private func extractNotification(
             app.withCString { appCString in
                 title.withCString { titleCString in
                     body.withCString { bodyCString in
-                        "watcher".withCString { source in
                         "SYSTEM_NOTIFICATION".withCString { code in
                         "info".withCString { level in
-                            emit_notification_ffi(source, code, level, titleCString, bodyCString)
-                        }}}
+                            emit_notification_ffi(appCString, code, level, titleCString, bodyCString)
+                        }}
                     }
                 }
             }

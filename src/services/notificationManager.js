@@ -10,11 +10,7 @@ export function setCurrentState(command) {
   currentState = command;
 }
 
-export function enqueueNotification(
-  app,
-  title,
-  body
-) {
+export function enqueueNotification(app,title,body) {
   notificationQueue.push({
     app,
     title,
