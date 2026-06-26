@@ -22,9 +22,9 @@
   "app": {
     "windows": [
       {
-        "title": "kore_companion",
-        "width": 800,
-        "height": 600
+        "title": "K.O.R.E. Companion",
+        "width": 900,
+        "height": 700
       }
     ],
     "security": {

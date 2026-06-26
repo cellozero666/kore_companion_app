@@ -20,12 +20,13 @@
  .card {
      background: white;
      border-radius: 14px;
-     padding: 20px;
+     padding: 10px;
      max-width: 500px;
-     box-shadow: 0 1px 3px rgba(0,0,0,.05);
+     box-shadow: 0 1px 3px rgba(0,0,0,.5);
+     margin-bottom: 10px;
 }
  .card h2 {
-     margin-bottom: 15px;
+     margin-bottom: 10px;
 }
  .card p {
      margin-bottom: 8px;
@@ -44,6 +45,8 @@
      flex-direction: column;
      gap: 6px;
 }
+
+
  .sidebar button {
      display: flex;
      align-items: center;
@@ -88,8 +91,8 @@
 /* -------------------------------- */
  .spotify-header {
      position: relative;
-     height: 50px;
-     margin-bottom: 10px;
+     height: 40px;
+     margin-bottom: 5px;
 }
  .spotify-header h1 {
      margin: 0;
@@ -325,4 +328,18 @@
   width: 100%;
   padding: 8px;
   margin-bottom: 10px;
+}
+
+.card button {
+    font-size: 18px;
+    background-color: #4285f4;
+    color: #fff;
+    padding: 8px;
+    border-radius: 6px;
+    border: none;
+}
+.card input {
+    font-size: 18px; 
+    width: 100%;  
+    padding: 8px;
 }

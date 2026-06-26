@@ -82,6 +82,8 @@ export default function Dashboard({
             value={serialCmd}
             onChange={(e) => setSerialCmd(e.target.value)}
         />
+        <br />
+        <br />
         <button onClick={handleSendSerial}>Send</button>
       </div>
     </>
