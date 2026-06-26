@@ -23,7 +23,6 @@ export default function Spotify() {
   async function loadProfile() {
     try {
       const token = localStorage.getItem("spotify_access_token");
-
       if (!token) {
         setConnected(false);
         setProfile(null);
@@ -31,64 +30,52 @@ export default function Spotify() {
         return;
       }
 
-      setConnected(true);
-
-      await loadCurrentTrack();
-
+      // Tenta carregar perfil para validar token
       try {
         const profileData = await getSpotifyProfile();
-
-        if (profileData) {
-          setProfile(profileData);
-        }
-      } catch {
-        setProfile({
-          display_name: "Spotify User",
-          images: [],
-        });
-      }
-    } catch {
-      try {
-        const refreshToken = localStorage.getItem("spotify_refresh_token");
-
-        if (!refreshToken) {
-          throw new Error("No refresh token");
-        }
-
-        const refreshResult = await refreshSpotifyToken(refreshToken);
-
-        const refreshData = JSON.parse(refreshResult);
-
-        localStorage.setItem("spotify_access_token", refreshData.access_token);
-
+        setProfile(profileData);
         setConnected(true);
-
-        await loadCurrentTrack();
-
-        try {
-          const profileData = await getSpotifyProfile();
-
-          setProfile(profileData);
-        } catch {}
-      } catch {
-        localStorage.removeItem("spotify_access_token");
-        localStorage.removeItem("spotify_refresh_token");
-
-        setConnected(false);
+        return;
+      } catch (e) {
+        if (!e.message.includes("401")) throw e;
       }
+
+      // Se 401, tenta refresh
+      const refreshToken = localStorage.getItem("spotify_refresh_token");
+      if (!refreshToken) throw new Error("No refresh token");
+
+      const refreshResult = await refreshSpotifyToken(refreshToken);
+      const refreshData = JSON.parse(refreshResult);
+      localStorage.setItem("spotify_access_token", refreshData.access_token);
+      
+      const profileData = await getSpotifyProfile();
+      setProfile(profileData);
+      setConnected(true);
+    } catch (e) {
+      localStorage.removeItem("spotify_access_token");
+      localStorage.removeItem("spotify_refresh_token");
+      setConnected(false);
+      setProfile(null);
+      setCurrentTrack(null);
     }
   }
 
   async function loadCurrentTrack() {
     try {
       const data = await getCurrentPlaying();
-
       setCurrentTrack(data);
-
-      if (data) {
-        await sendSpotifyToDevice(data);
+      if (data) await sendSpotifyToDevice(data);
+    } catch (e) {
+      if (e.message.includes("401")) {
+        await loadProfile();
+        // Retry one time after refresh
+        try {
+          const data = await getCurrentPlaying();
+          setCurrentTrack(data);
+          if (data) await sendSpotifyToDevice(data);
+        } catch {}
       }
-    } catch {}
+    }
   }
 
   async function sendSpotifyToDevice(trackData) {
