@@ -9,5 +9,17 @@
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>K.O.R.E. usa sua localização para exibir informações meteorológicas da sua região.</string>
 
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleURLName</key>
+        <string>com.m6.korecompanion</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>kore</string>
+        </array>
+      </dict>
+    </array>
+
   </dict>
 </plist>

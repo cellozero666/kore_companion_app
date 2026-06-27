@@ -12,7 +12,7 @@ import {
   previousTrack,
 } from "../services/spotifyApi";
 import { FaSpotify } from "react-icons/fa";
-import { listen } from "@tauri-apps/api/event";
+import { listen, emit } from "@tauri-apps/api/event";
 import { sendSerialCommand } from "../services/koreApi";
 
 export default function Spotify() {
@@ -23,6 +23,7 @@ export default function Spotify() {
   async function loadProfile() {
     try {
       const token = localStorage.getItem("spotify_access_token");
+
       if (!token) {
         setConnected(false);
         setProfile(null);
@@ -147,15 +148,10 @@ export default function Spotify() {
         if (!code) {
           return;
         }
-
         const result = await exchangeSpotifyCode(code);
-
         const tokenData = JSON.parse(result);
-
         localStorage.setItem("spotify_access_token", tokenData.access_token);
-
         localStorage.setItem("spotify_refresh_token", tokenData.refresh_token);
-
         await loadProfile();
       } catch {}
     }).then((fn) => {

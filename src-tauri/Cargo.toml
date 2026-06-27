@@ -1,6 +1,6 @@
 [package]
 name = "kore_companion"
-version = "0.1.0"
+version = "0.9.0"
 description = "K.O.R.E. Companion"
 authors = ["Cello Z."]
 edition = "2021"

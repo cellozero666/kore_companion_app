@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen, emit } from "@tauri-apps/api/event";
 
 export async function getSpotifyAuthUrl() {
   return await invoke("spotify_auth_url");
@@ -19,17 +20,50 @@ export async function refreshSpotifyToken(refreshToken) {
 export async function getSpotifyProfile() {
   const accessToken = localStorage.getItem("spotify_access_token");
 
-  const response = await fetch("https://api.spotify.com/v1/me", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+  try {
 
-  if (!response.ok) {
-    throw new Error(`Spotify API Error ${response.status}`);
+    const response = await fetch("https://api.spotify.com/v1/me", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    await emit("app-notification", {
+      source: "debug",
+      code: "FETCH",
+      level: "info",
+      title: "Spotify",
+      message: "time " + response.headers.get("Retry-After")
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+
+      await emit("app-notification", {
+        source: "debug",
+        code: "PROFILE",
+        level: "error",
+        title: "Spotify",
+        message: body
+      });
+
+      throw new Error(`Spotify API Error ${response.status}`);
+    }
+
+    return await response.json();
+
+  } catch (e) {
+
+    await emit("app-notification", {
+      source: "debug",
+      code: "FETCH_ERROR",
+      level: "error",
+      title: "Spotify",
+      message: String(e)
+    });
+
+    throw e;
   }
-
-  return await response.json();
 }
 
 export async function getCurrentPlaying() {
