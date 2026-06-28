@@ -19,13 +19,15 @@ class BLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .poweredOn:
+            print("[\(Date().timeIntervalSince1970)] BLEManager: Powered On, scanning...")
             central.scanForPeripherals(withServices: [serviceUUID], options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
         default:
-            break
+            print("[\(Date().timeIntervalSince1970)] BLEManager: State \(central.state)")
         }
     }
     
     func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+        print("[\(Date().timeIntervalSince1970)] BLEManager: Discovered \(peripheral.name ?? "Unknown")")
         self.peripheral = peripheral
         peripheral.delegate = self
         central.stopScan()
@@ -33,11 +35,13 @@ class BLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     }
     
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+        print("[\(Date().timeIntervalSince1970)] BLEManager: Connected to \(peripheral.name ?? "Unknown")")
         peripheral.discoverServices([serviceUUID])
         ble_on_connected()
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+        print("[\(Date().timeIntervalSince1970)] BLEManager: Disconnected")
         isReady = false
         ble_on_disconnected()
         central.scanForPeripherals(withServices: [serviceUUID], options: nil)

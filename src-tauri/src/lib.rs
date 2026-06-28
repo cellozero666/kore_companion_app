@@ -457,7 +457,7 @@ fn auto_connect(
     state: tauri::State<AppState>
 ) -> bool
 {
-    println!("Auto-connect: Starting BLE priority scan...");
+    println!("[{}] Auto-connect: Starting BLE priority scan...", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
 
     // Increased timeout to allow BLE time to connect, discover, and initialize
     let start = Instant::now();
@@ -468,7 +468,7 @@ fn auto_connect(
         // Since we don't have that directly in CommunicationManager, 
         // we'll rely on is_ble_connected() + a small buffer time.
         if state.comm_manager.is_ble_connected() {
-            println!("Auto-connect: BLE connected, skipping serial scan.");
+            println!("[{}] Auto-connect: BLE connected, skipping serial scan.", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
             // Increased delay to 3s to guarantee service/characteristic discovery completes
             std::thread::sleep(Duration::from_millis(3000));
             return true;
@@ -476,7 +476,7 @@ fn auto_connect(
         std::thread::sleep(Duration::from_millis(500));
     }
 
-    println!("Auto-connect: BLE timeout or unavailable. Starting Serial scan.");
+    println!("[{}] Auto-connect: BLE timeout or unavailable. Starting Serial scan.", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
     
     let ports =
         match serialport::available_ports()
