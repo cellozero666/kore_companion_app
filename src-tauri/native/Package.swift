@@ -15,7 +15,7 @@ let package = Package(
         .target(
             name: "NotificationWatcher",
             path: ".",
-            sources: ["NotificationWatcher.swift"]
+            sources: ["NotificationWatcher.swift", "BLEManager.swift"]
         )
     ]
 )

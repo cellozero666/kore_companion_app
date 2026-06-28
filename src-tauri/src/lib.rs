@@ -1,7 +1,7 @@
 use std::io::Read;
 use std::io::Write;
 use std::sync::Mutex;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::Emitter;
 use tauri::AppHandle;
 use tauri::Manager;
@@ -12,6 +12,8 @@ use std::os::raw::c_char;
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool,Ordering};
 mod config;
+mod transport;
+use crate::transport::communication_manager::CommunicationManager;
 use crate::config::{
     SPOTIFY_CLIENT_ID,
     SPOTIFY_CLIENT_SECRET,
@@ -28,6 +30,7 @@ struct AppState
     serial_port: Mutex<
         Option<Box<dyn SerialPort>>
     >,
+    comm_manager: CommunicationManager,
 }
 
 use tiny_http::{Server, Response};
@@ -79,6 +82,20 @@ fn list_ports() -> Vec<String>
 
 use serde_json::json;
 
+// Internal Rust API for notifications
+fn emit_app_notification_internal(handle: &AppHandle, source: &str, code: &str, level: &str, title: &str, message: &str) {
+    // 1. Emit to UI
+    emit_app_notification(handle, source, code, level, title, message);
+
+    // 2. Transmit to Firmware via CommunicationManager
+    if let Some(state) = handle.try_state::<AppState>() {
+        let mut serial_port = state.serial_port.lock().unwrap();
+        let command = format!("notification|{}|{}|{}", source, title, message);
+        state.comm_manager.send_command(&command, &mut serial_port);
+    }
+}
+
+// Wrapper for notifications (Rust to Rust)
 fn emit_app_notification(handle: &AppHandle, source: &str, code: &str, level: &str, title: &str, message: &str) {
     let _ = handle.emit("app-notification", json!({
         "source": source,
@@ -89,6 +106,7 @@ fn emit_app_notification(handle: &AppHandle, source: &str, code: &str, level: &s
     }));
 }
 
+// FFI entry point (Swift to Rust)
 #[unsafe(no_mangle)]
 pub extern "C" fn emit_notification_ffi(
     source: *const c_char,
@@ -104,15 +122,29 @@ pub extern "C" fn emit_notification_ffi(
         let title = unsafe { CStr::from_ptr(title).to_string_lossy() };
         let message = unsafe { CStr::from_ptr(message).to_string_lossy() };
         
-        // 1. Emit to UI
-        emit_app_notification(handle, &source, &code, &level, &title, &message);
+        emit_app_notification_internal(handle, &source, &code, &level, &title, &message);
+    }
+}
 
-        // 2. Send to Serial (Hardware)
-        let state = handle.state::<AppState>();
-        let mut serial_port = state.serial_port.lock().unwrap();
-        if let Some(port) = serial_port.as_mut() {
-            let command = format!("notification|{}|{}|{}\n", source, title, message);
-            let _ = port.write_all(command.as_bytes());
+#[unsafe(no_mangle)]
+pub extern "C" fn ble_data_received_ffi(data: *const c_char) {
+    if let Some(handle) = APP_HANDLE.get() {
+        let raw_data = unsafe { CStr::from_ptr(data).to_string_lossy() };
+        println!("Rust recebeu: {}", raw_data);
+        
+        // Parse command|value protocol (split only on first |)
+        if let Some((command, value)) = raw_data.split_once('|') {
+            println!("Command: {}", command);
+            println!("Value: {}", value);
+            println!("Emitindo firmware-message");
+            
+            let _ = handle.emit("firmware-message", serde_json::json!({
+                "command": command,
+                "value": value
+            }));
+            println!("Evento firmware-message enviado");
+        } else {
+            println!("Mensagem inválida: {}", raw_data);
         }
     }
 }
@@ -425,10 +457,27 @@ fn auto_connect(
     state: tauri::State<AppState>
 ) -> bool
 {
-    println!(
-        "Searching for K.O.R.E..."
-    );
+    println!("Auto-connect: Starting BLE priority scan...");
 
+    // Increased timeout to allow BLE time to connect, discover, and initialize
+    let start = Instant::now();
+    let timeout = Duration::from_secs(10);
+    
+    while start.elapsed() < timeout {
+        // We need a way to check if BLE is fully ready (isReady in Swift).
+        // Since we don't have that directly in CommunicationManager, 
+        // we'll rely on is_ble_connected() + a small buffer time.
+        if state.comm_manager.is_ble_connected() {
+            println!("Auto-connect: BLE connected, skipping serial scan.");
+            // Increased delay to 3s to guarantee service/characteristic discovery completes
+            std::thread::sleep(Duration::from_millis(3000));
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(500));
+    }
+
+    println!("Auto-connect: BLE timeout or unavailable. Starting Serial scan.");
+    
     let ports =
         match serialport::available_ports()
         {
@@ -449,9 +498,7 @@ fn auto_connect(
                 115200
             )
             .timeout(
-                Duration::from_millis(
-                    1000
-                )
+                Duration::from_millis(1000)
             )
             .open()
             {
@@ -465,9 +512,7 @@ fn auto_connect(
             );
 
         std::thread::sleep(
-            Duration::from_millis(
-                300
-            )
+            Duration::from_millis(500)
         );
 
         let mut buffer =
@@ -525,91 +570,29 @@ fn auto_connect(
 }
 
 
-fn execute_serial_query(
-    port: &mut Box<dyn SerialPort>,
-    command: &str,
-    error_fallback: &str
-) -> String {
-    let data = format!("{}\n", command);
-    let _ = port.write_all(data.as_bytes());
-    std::thread::sleep(Duration::from_millis(200));
-    let mut buffer = [0u8; 256];
-    match port.read(&mut buffer) {
-        Ok(size) => String::from_utf8_lossy(&buffer[..size]).trim().to_string(),
-        Err(_) => error_fallback.to_string(),
-    }
+#[tauri::command]
+fn get_firmware_version(state: tauri::State<'_, AppState>) {
+    let mut serial_port = state.serial_port.lock().unwrap();
+    state.comm_manager.send_command("version", &mut serial_port);
 }
 
 #[tauri::command]
-fn get_firmware_version(
-    state: tauri::State<AppState>
-) -> String
-{
-    let mut serial_port =
-        state
-            .serial_port
-            .lock()
-            .unwrap();
-
-    match serial_port.as_mut()
-    {
-        Some(port) => execute_serial_query(port, "version", "Unknown"),
-        None => "Disconnected".to_string(),
-    }
+fn get_wifi_status(state: tauri::State<'_, AppState>) {
+    let mut serial_port = state.serial_port.lock().unwrap();
+    state.comm_manager.send_command("wifi_status", &mut serial_port);
 }
 
 #[tauri::command]
-fn get_wifi_status(
-    state: tauri::State<AppState>
-) -> String {
-    let mut serial_port =
-        state
-        .serial_port
-        .lock()
-        .unwrap();
-
-    match serial_port.as_mut() {
-        Some(port) => execute_serial_query(port, "wifi_status", "DISCONNECTED|--|--"),
-        None => "DISCONNECTED|--|--".to_string(),
-    }
+fn get_current_face(state: tauri::State<'_, AppState>) {
+    let mut serial_port = state.serial_port.lock().unwrap();
+    state.comm_manager.send_command("current_face", &mut serial_port);
 }
 
 #[tauri::command]
-fn get_current_face(
-    state: tauri::State<AppState>
-) -> String
-{
-    let mut serial_port =
-        state
-            .serial_port
-            .lock()
-            .unwrap();
-
-    match serial_port.as_mut()
-    {
-        Some(port) => execute_serial_query(port, "current_face", "Unknown"),
-        None => "Disconnected".to_string(),
-    }
+fn get_uptime(state: tauri::State<'_, AppState>) {
+    let mut serial_port = state.serial_port.lock().unwrap();
+    state.comm_manager.send_command("uptime", &mut serial_port);
 }
-
-#[tauri::command]
-fn get_uptime(
-    state: tauri::State<AppState>
-) -> String
-{
-    let mut serial_port =
-        state
-            .serial_port
-            .lock()
-            .unwrap();
-
-    match serial_port.as_mut()
-    {
-        Some(port) => execute_serial_query(port, "uptime", "Unknown"),
-        None => "Disconnected".to_string(),
-    }
-}
-
 #[tauri::command]
 fn send_serial_command(
     command: String,
@@ -621,49 +604,8 @@ fn send_serial_command(
             .serial_port
             .lock()
             .unwrap();
-
-    match serial_port.as_mut()
-    {
-        Some(port) =>
-        {
-            let data =
-                format!(
-                    "{}\n",
-                    command
-                );
-
-            match port.write_all(
-                data.as_bytes()
-            )
-            {
-                Ok(_) =>
-                {
-                    println!(
-                        "TX: {}",
-                        command
-                    );
-
-                    true
-                }
-
-                Err(error) =>
-                {
-                    if let Some(handle) = APP_HANDLE.get() {
-                        emit_app_notification(handle, "serial", "WRITE_ERROR", "error", "Falha na Serial", &format!("Erro ao escrever: {}", error));
-                    }
-                    false
-                }
-            }
-        }
-
-        None =>
-        {
-            if let Some(handle) = APP_HANDLE.get() {
-                emit_app_notification(handle, "serial", "NO_CONNECTION", "error", "Falha na Serial", "Nenhuma conexão serial ativa");
-            }
-            false
-        }
-    }
+            
+    state.comm_manager.send_command(&command, &mut serial_port)
 }
 
 #[tauri::command]
@@ -753,6 +695,26 @@ pub extern "C" fn emit_notification(
     }
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn ble_on_connected() {
+    if let Some(handle) = APP_HANDLE.get() {
+        if let Some(state) = handle.try_state::<AppState>() {
+            state.comm_manager.set_ble_connected(true);
+            emit_app_notification_internal(handle, "ble", "CONNECTED", "info", "BLE", "K.O.R.E. Connected");
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn ble_on_disconnected() {
+    if let Some(handle) = APP_HANDLE.get() {
+        if let Some(state) = handle.try_state::<AppState>() {
+            state.comm_manager.set_ble_connected(false);
+            emit_app_notification_internal(handle, "ble", "DISCONNECTED", "info", "BLE", "K.O.R.E. Disconnected");
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run()
 {
@@ -761,7 +723,8 @@ pub fn run()
         .manage(
             AppState
             {
-                serial_port: Mutex::new(None)
+                serial_port: Mutex::new(None),
+                comm_manager: CommunicationManager::new(),
             }
         )
 
@@ -794,6 +757,13 @@ pub fn run()
                     }
                 }
             );
+
+            unsafe {
+                extern "C" {
+                    fn init_ble_manager();
+                }
+                init_ble_manager();
+            }
 
             Ok(())
         })

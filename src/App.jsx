@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FaCat } from "react-icons/fa";
+import { listen } from "@tauri-apps/api/event";
 import { startWatchers } from "./services/watcherManager";
 import {
   autoConnect,
@@ -33,6 +34,18 @@ function App() {
   const [spotifyConnected, setSpotifyConnected] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
 
+  async function loadAllData() {
+    try {
+      setFirmware(await getFirmwareVersion());
+      setUptime(await getUptime());
+      await loadWifiStatus();
+      await loadSpotifyStatus();
+      await loadGoogleStatus();
+    } catch (e) {
+      console.error("Failed to load data", e);
+    }
+  }
+
   async function loadUptime() {
     setUptime(await getUptime());
   }
@@ -64,13 +77,7 @@ function App() {
       setConnected(result);
 
       if (result) {
-        setFirmware(await getFirmwareVersion());
-        setUptime(await getUptime());
-
-        await loadWifiStatus();
-
-        await loadSpotifyStatus();
-        await loadGoogleStatus();
+        await loadAllData();
       }
     } catch (error) {
       // Notification handled by koreApi.js
@@ -98,6 +105,46 @@ function App() {
   }
 
   useEffect(() => {
+    const unlisten = listen("firmware-message", (event) => {
+        const { command, value } = event.payload;
+
+        switch (command) {
+            case "version":
+                setFirmware(value);
+                break;
+            case "uptime":
+                setUptime(value);
+                break;
+            case "current_face":
+                // Handle current face if needed
+                break;
+            case "wifi_status":
+                const parts = value.split('|');
+                setWifiConnected(parts[0] === "CONNECTED");
+                setWifiSsid(parts[1]);
+                setWifiIp(parts[2]);
+                break;
+        }
+    });
+
+    // Also need to handle connection/disconnection events
+    const unlistenNotification = listen("app-notification", async (event) => {
+      const { source, code } = event.payload;
+      if (source === "ble") {
+        if (code === "CONNECTED") {
+          setConnected(true);
+          // Small delay to ensure ESP32 is ready after connection
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Trigger data load commands (fire-and-forget)
+          getFirmwareVersion();
+          getUptime();
+          getWifiStatus();
+        } else if (code === "DISCONNECTED") {
+          setConnected(false);
+        }
+      }
+    });
+
     async function initialize() {
       setLoading(true);
 
@@ -115,6 +162,11 @@ function App() {
     initialize();
 
     startWatchers();
+
+    return () => {
+      unlisten.then((fn) => fn());
+      unlistenNotification.then((fn) => fn());
+    };
   }, []);
 
   useEffect(() => {
@@ -135,16 +187,7 @@ function App() {
         }
     }, 1000);
 
-    const statusTimer = setInterval(async () => {
-      await loadUptime();
-      await loadWifiStatus();
-
-      await loadSpotifyStatus();
-      await loadGoogleStatus();
-    }, 5000);
-
     return () => {
-      clearInterval(statusTimer);
       clearInterval(clockTimer);
     };
   }, [connected]);

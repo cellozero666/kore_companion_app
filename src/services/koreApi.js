@@ -38,15 +38,15 @@ export async function autoConnect() {
 }
 
 export async function getFirmwareVersion() {
-  return await request("get_firmware_version");
+  await request("get_firmware_version");
 }
 
 export async function getCurrentFace() {
-  return await request("get_current_face");
+  await request("get_current_face");
 }
 
 export async function getUptime() {
-  return await request("get_uptime");
+  await request("get_uptime");
 }
 
 export async function sendSerialCommand(command) {
@@ -56,13 +56,7 @@ export async function sendSerialCommand(command) {
 }
 
 export async function getWifiStatus() {
-  const response = await request("get_wifi_status");
-  const parts = response.split("|");
-  return {
-    connected: parts[0] === "CONNECTED",
-    ssid: parts[1] ?? "--",
-    ip: parts[2] ?? "--",
-  };
+  await request("get_wifi_status");
 }
 
 export async function syncClock() {
