@@ -6,6 +6,9 @@
     <key>NSAccessibilityUsageDescription</key>
     <string>K.O.R.E. precisa de acesso à acessibilidade para ler notificações do sistema e exibi-las no seu dispositivo.</string>
 
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>K.O.R.E. Companion uses Bluetooth to communicate with your K.O.R.E. device.</string>
+
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>K.O.R.E. usa sua localização para exibir informações meteorológicas da sua região.</string>
 
